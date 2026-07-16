@@ -13,6 +13,17 @@ if(NOT DEFINED CMAKE_C_COMPILER AND DEFINED ENV{CC})
   set(CMAKE_C_COMPILER "$ENV{CC}" CACHE STRING "C compiler")
 endif()
 
+# ---------------------------------------------------------------------------
+# Default install prefix: <build_dir>/install
+# Set before project() so it wins over CMake's platform default (/usr/local).
+# The user can still override with -DCMAKE_INSTALL_PREFIX=/your/path because
+# that flag is processed before this file runs.
+# ---------------------------------------------------------------------------
+if(NOT DEFINED CMAKE_INSTALL_PREFIX OR CMAKE_INSTALL_PREFIX STREQUAL "")
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install"
+      CACHE PATH "Install prefix (default: <build_dir>/install)" FORCE)
+endif()
+
 project(smerfs VERSION 1.0 LANGUAGES C Fortran)
 
 # ---------------------------------------------------------------------------
