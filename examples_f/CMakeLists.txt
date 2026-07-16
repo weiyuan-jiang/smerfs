@@ -9,8 +9,11 @@
 # ---------------------------------------------------------------------------
 add_executable(example1_f example1_f.F90)
 
+# Output filename: example1_f.x
+set_target_properties(example1_f PROPERTIES OUTPUT_NAME example1_f.x)
+
 # smerfs_f carries the module directory and smerfs_c as transitive dependencies
 target_link_libraries(example1_f PRIVATE smerfs_f m)
 
-# example1_f writes output CSVs to CWD; no extra include paths needed beyond
-# what smerfs_f already propagates (module dir via its PUBLIC include).
+# example1_f.x takes no input files; all parameters are compiled in.
+# It writes realisation.csv and correl.csv to the working directory.
