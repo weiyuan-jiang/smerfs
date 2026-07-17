@@ -39,7 +39,7 @@ module smerfs_interface
                           llp1_re, llp1_im, &
                           F, H, tau_power, eta_ratio2, &
                           cov, cross_cov) &
-        bind(C, name='update_cov') result(rc)
+        bind(C, name='update_cov_w') result(rc)
       import :: c_int, c_double, c_double_complex
       integer(c_int), value, intent(in) :: m_max, N, M
       real(c_double), value, intent(in) :: norm_re, norm_im
@@ -60,7 +60,7 @@ module smerfs_interface
     !             const double *matrices, double *out)
     ! ------------------------------------------------------------------
     function c_inverse(N, M, matrices, out) &
-        bind(C, name='inverse') result(rc)
+        bind(C, name='inverse_w') result(rc)
       import :: c_int, c_double
       integer(c_int), value, intent(in) :: N, M
       real(c_double),        intent(in)  :: matrices(*)
@@ -73,7 +73,7 @@ module smerfs_interface
     !              const double *matrices, double *out)
     ! ------------------------------------------------------------------
     function c_cholesky(N, M, matrices, out) &
-        bind(C, name='cholesky') result(rc)
+        bind(C, name='cholesky_w') result(rc)
       import :: c_int, c_double
       integer(c_int), value, intent(in) :: N, M
       real(c_double),        intent(in)  :: matrices(*)
@@ -87,7 +87,7 @@ module smerfs_interface
     !                 double *innov, double *trans)
     ! ------------------------------------------------------------------
     function c_state_space(N, M, cross_cov, cov, innov, trans) &
-        bind(C, name='state_space') result(rc)
+        bind(C, name='state_space_w') result(rc)
       import :: c_int, c_double
       integer(c_int), value, intent(in) :: N, M
       real(c_double),        intent(in)  :: cross_cov(*)
@@ -105,7 +105,7 @@ module smerfs_interface
     !              const double *zvals, double complex *out)
     ! ------------------------------------------------------------------
     function c_hyp_llp1(llp1_real, llp1_imag, m, nz, zvals, out) &
-        bind(C, name='hyp_llp1') result(rc)
+        bind(C, name='hyp_llp1_w') result(rc)
       import :: c_int, c_double, c_double_complex
       real(c_double), value, intent(in) :: llp1_real, llp1_imag
       integer(c_int), value, intent(in) :: m, nz
@@ -123,7 +123,7 @@ module smerfs_interface
     ! C passes complex scalars by value; Fortran VALUE attribute matches.
     ! ------------------------------------------------------------------
     function c_hyp_lmz(l, m, z, gamma_ratio0, psi0) &
-        bind(C, name='hyp_lmz') result(res)
+        bind(C, name='hyp_lmz_w') result(res)
       import :: c_int, c_double, c_double_complex
       complex(c_double_complex), value, intent(in) :: l
       integer(c_int),            value, intent(in) :: m
@@ -140,7 +140,7 @@ module smerfs_interface
     !          const uint32_t *rand_ints, float *out)
     ! ------------------------------------------------------------------
     function c_zigg(num_needed, num_ints, rand_ints, out) &
-        bind(C, name='zigg') result(rc)
+        bind(C, name='zigg_w') result(rc)
       import :: c_int, c_int32_t, c_float
       integer(c_int),    value, intent(in) :: num_needed, num_ints
       integer(c_int32_t),       intent(in)  :: rand_ints(*)

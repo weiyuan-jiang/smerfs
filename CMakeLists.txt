@@ -49,13 +49,11 @@ add_compile_options(
 )
 
 # Fortran (nagfor):
-#   -f2018     accept Fortran 2018 (superset of F90; needed for iso_c_binding)
-#   -O3        optimisation
-#   -ieee=full do not abort on transient NaN/Inf from C complex arithmetic
+#   -f2018  accept Fortran 2018 (superset of F90; needed for iso_c_binding)
+#   -O3     optimisation
 add_compile_options(
   $<$<COMPILE_LANGUAGE:Fortran>:-f2018>
   $<$<COMPILE_LANGUAGE:Fortran>:-O3>
-  $<$<COMPILE_LANGUAGE:Fortran>:-ieee=full>
 )
 
 # ---------------------------------------------------------------------------

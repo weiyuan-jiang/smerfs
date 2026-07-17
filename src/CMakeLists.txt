@@ -12,6 +12,7 @@ add_library(smerfs_c STATIC
   linalg.c
   smerfs.c
   ziggurat.c
+  smerfs_fenv.c      # FP-environment wrappers (feholdexcept/fesetenv)
 )
 
 target_include_directories(smerfs_c PUBLIC
