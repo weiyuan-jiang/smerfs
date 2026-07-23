@@ -298,13 +298,15 @@ program example1_f
   ! ----------------------------------------------------------------
   write(*,'(a)') 'Creating realisation...'
 
-  allocate(noise    (Mord, n_m, uhalf))
+  ! noise needs nz rings (not just uhalf): south-hemisphere walk accesses
+  ! noise at indices uhalf+1..nz, matching the Python reference (filters.py).
+  allocate(noise    (Mord, n_m, nz))
   allocate(fp_f     (Mord, n_m))
   allocate(fp_fstart(Mord, n_m))
   allocate(res_cplx (n_m, nz))
   allocate(realisation(nphi, nz))
 
-  n_rand_needed = uhalf * Mord * n_m * 2
+  n_rand_needed = nz * Mord * n_m * 2
   n_rand_got    = n_rand_needed + n_rand_needed/32 + 64
   allocate(rand_ints (n_rand_got))
   allocate(noise_real(n_rand_needed))
@@ -321,8 +323,9 @@ program example1_f
     write(*,'(a,i0,a)') 'WARNING: zigg exhausted, ', rc, ' samples missing'
 
   ! noise(q, imode, ring) = (noise_real(2k-1) + i*noise_real(2k)) / sqrt(2)
+  ! Loop over all nz rings so south-hemisphere indices (uhalf+1..nz) are valid.
   nn = 0
-  do i = 1, uhalf
+  do i = 1, nz
     do ip = 1, Mord
       do j = 1, n_m
         nn = nn + 1
