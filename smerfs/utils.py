@@ -3,7 +3,7 @@ Utility functions (typically for comparing power spectra)
 """
 from __future__ import print_function, division, unicode_literals, absolute_import
 from numpy import arange, float64, inner, cumprod, flatnonzero, empty, pi, zeros
-from scipy.special import lpn
+from scipy.special import legendre_p_all  as lpn
 
 
 def make_cl(coeffs, lmax):
@@ -45,8 +45,8 @@ def analytic_cov(coeffs,cos_mu, lmax=1000):
 
     correl = zeros(len(cos_mu))
     for i,z in enumerate(cos_mu):
-        Plz, dPlz_dz = lpn(lmax, z) # Legendre polys and their derivs
+        # SciPy's current legendre_p_all returns a leading derivative axis.
+        Plz = lpn(lmax, z)[0]
         correl[i] = inner(Plz, l_coeffs)
 
     return correl
-

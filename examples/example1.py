@@ -9,6 +9,9 @@ coeffs = (1.0, 0.0, 1e-4) # this has length scale around l=10
 sf = build_filter(nz=nz, nphi=nphi, coeffs=coeffs, dtype=np.float64) # Build the filter coefficients
 # Make an example realisation
 res = sf.create_realisation() # has shape (nz, nphi)
+res = res - res.mean()
+res = res / res.std()
+np.savetxt('realisation_python.csv', res, delimiter=',')
 #pl.imshow(res) # Plot
 #pl.savefig('res.png', dpi=100)
 
@@ -20,7 +23,6 @@ pl.xlabel(r'$\cos \theta$')
 pl.ylabel(r'$C(\cos \theta)$')
 pl.xlim(1,-1)
 pl.savefig('correl1.png',dpi=100)
-
 
 
 
