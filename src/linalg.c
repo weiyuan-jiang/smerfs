@@ -242,7 +242,41 @@ int state_space(const int N, const int M,
     return -1;
 
   return 0;
+}
 
+/*
+  state_space_1
+  =============
+  Scalar (Mord=1) Kalman-filter state-space decomposition.
+  Used after cov_legendre to build the Mord=1 filter for short xcorr.
 
+  For scalar AR(1): x_{i+1} = t_i * x_i + b_i * w_i :
+    t_i        = cross_cov[i] / cov[i]
+    b_i^2      = cov[i+1] - t_i^2 * cov[i]
+    innov[0]   = sqrt(cov[0])
+    innov[i+1] = sqrt(max(b_i^2, 1e-30 * cov[i+1]))
 
+  A floor of 1e-30 * cov[i+1] is applied to b^2 to handle underflow for
+  high-m modes where adjacent rings are nearly perfectly correlated.
+
+  Returns 0 on success, i+1 if cov[i] <= 0.
+*/
+int state_space_1(const int N,
+                  const double *restrict cross_cov,
+                  const double *restrict cov,
+                  double *restrict innov,
+                  double *restrict trans)
+{
+  if (cov[0] <= 0.0) return 1;
+  innov[0] = sqrt(cov[0]);
+
+  for (int i = 0; i < N - 1; ++i) {
+    if (cov[i] <= 0.0) return i + 2;
+    const double t = cross_cov[i] / cov[i];
+    trans[i] = t;
+    double b2 = cov[i+1] - t * t * cov[i];
+    if (b2 < 1e-30 * cov[i+1]) b2 = 1e-30 * cov[i+1];
+    innov[i+1] = sqrt(b2);
+  }
+  return 0;
 }

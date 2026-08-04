@@ -51,6 +51,12 @@ int state_space(const int, const int,
                const double *, const double *,
                double *, double *);
 int zigg      (const int, int, const uint32_t *, float *);
+int cov_legendre(const int, const int, const int,
+                 const double, const double,
+                 const double *, double *, double *);
+int state_space_1(const int,
+                  const double *, const double *,
+                  double *, double *);
 
 /* ------------------------------------------------------------------ */
 /* Convenience macro: save FP env, call, clear exceptions, restore    */
@@ -131,6 +137,28 @@ int zigg_w(const int num_needed, int num_ints,
 {
     FENV_WRAP_BEGIN
     int rc = zigg(num_needed, num_ints, rand_ints, out);
+    FENV_WRAP_END
+    return rc;
+}
+
+int cov_legendre_w(const int m_max, const int N, const int lmax,
+                   const double c0, const double c2,
+                   const double *z_pts, double *cov, double *cross_cov)
+{
+    /* No FP exceptions expected (pure real arithmetic, no denormals for
+     * well-behaved inputs), but wrap anyway for consistency.           */
+    FENV_WRAP_BEGIN
+    int rc = cov_legendre(m_max, N, lmax, c0, c2, z_pts, cov, cross_cov);
+    FENV_WRAP_END
+    return rc;
+}
+
+int state_space_1_w(const int N,
+                    const double *cross_cov, const double *cov,
+                    double *innov, double *trans)
+{
+    FENV_WRAP_BEGIN
+    int rc = state_space_1(N, cross_cov, cov, innov, trans);
     FENV_WRAP_END
     return rc;
 }

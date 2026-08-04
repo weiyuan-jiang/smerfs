@@ -16,7 +16,8 @@ module smerfs_interface
 
   private
   public :: update_cov_f, inverse_f, cholesky_f, state_space_f, &
-            hyp_llp1_f, hyp_lmz_f, zigg_f
+            hyp_llp1_f, hyp_lmz_f, zigg_f, &
+            cov_legendre_f, state_space_1_f
 
   ! ------------------------------------------------------------------
   ! Raw C bindings (private; called only through the wrappers below)
@@ -147,6 +148,43 @@ module smerfs_interface
       real(c_float),            intent(out) :: out(*)
       integer(c_int) :: rc
     end function c_zigg
+
+    ! ------------------------------------------------------------------
+    ! cov.c
+    !
+    ! int cov_legendre(const int m_max, const int N, const int lmax,
+    !                  const double c0, const double c2,
+    !                  const double *z_pts,
+    !                  double *cov, double *cross_cov)
+    ! ------------------------------------------------------------------
+    function c_cov_legendre(m_max, N, lmax, c0, c2, z_pts, cov, cross_cov) &
+        bind(C, name='cov_legendre') result(rc)
+      import :: c_int, c_double
+      integer(c_int), value, intent(in) :: m_max, N, lmax
+      real(c_double), value, intent(in) :: c0, c2
+      real(c_double),        intent(in)  :: z_pts(*)
+      real(c_double),        intent(out) :: cov(*)
+      real(c_double),        intent(out) :: cross_cov(*)
+      integer(c_int) :: rc
+    end function c_cov_legendre
+
+    ! ------------------------------------------------------------------
+    ! linalg.c
+    !
+    ! int state_space_1(const int N,
+    !                   const double *cross_cov, const double *cov,
+    !                   double *innov, double *trans)
+    ! ------------------------------------------------------------------
+    function c_state_space_1(N, cross_cov, cov, innov, trans) &
+        bind(C, name='state_space_1_w') result(rc)
+      import :: c_int, c_double
+      integer(c_int), value, intent(in) :: N
+      real(c_double),        intent(in)  :: cross_cov(*)
+      real(c_double),        intent(in)  :: cov(*)
+      real(c_double),        intent(out) :: innov(*)
+      real(c_double),        intent(out) :: trans(*)
+      integer(c_int) :: rc
+    end function c_state_space_1
 
   end interface
 
@@ -321,5 +359,56 @@ contains
     rc = int( c_zigg(int(num_needed, c_int), int(num_ints, c_int), &
                      rand_ints, out) )
   end subroutine zigg_f
+
+  ! ==================================================================
+  ! cov_legendre_f
+  ! ==================================================================
+  ! Compute Mord=1 scalar covariance and cross-covariance for all
+  ! m-modes (0..m_max) at all z-points via direct associated Legendre
+  ! series.  Bypasses hyp_llp1 entirely; always numerically stable.
+  ! Used when |Im(l(l+1))| = sqrt(c0/c2) is large (short xcorr).
+  !
+  !   m_max     : max m-mode index (= n_m - 1 = nphi/2)
+  !   N         : number of z-points (= uhalf = nz/2+1)
+  !   lmax      : Legendre truncation degree (typically 3*nz)
+  !   c0, c2    : power spectrum C_l = 1/(c0 + c2*(l(l+1))^2)
+  !   z_pts     : (N) cos(theta) values, equator-first
+  !   cov       : (m_max+1, N)   output scalar covariances
+  !   cross_cov : (m_max+1, N-1) output scalar cross-covariances
+  !   rc        : 0 = success, -1 = allocation failure
+  subroutine cov_legendre_f(m_max, N, lmax, c0, c2, z_pts, cov, cross_cov, rc)
+    integer,        intent(in)  :: m_max, N, lmax
+    real(c_double), intent(in)  :: c0, c2
+    real(c_double), intent(in)  :: z_pts(N)
+    real(c_double), intent(out) :: cov((m_max+1)*N)
+    real(c_double), intent(out) :: cross_cov((m_max+1)*(N-1))
+    integer,        intent(out) :: rc
+
+    rc = int( c_cov_legendre(int(m_max, c_int), int(N, c_int), int(lmax, c_int), &
+                             c0, c2, z_pts, cov, cross_cov) )
+  end subroutine cov_legendre_f
+
+  ! ==================================================================
+  ! state_space_1_f
+  ! ==================================================================
+  ! Construct Kalman-filter innovation (scalar sqrt) and transition
+  ! (scalar) for the Mord=1 case.  Called after cov_legendre_f.
+  !
+  !   N         : number of z steps (= uhalf)
+  !   cross_cov : (N-1) input scalar cross-covariances
+  !   cov       : (N)   input scalar covariances
+  !   innov     : (N)   output innovation = sqrt(cov - trans^2 * cov_prev)
+  !   trans     : (N-1) output transition = cross_cov / cov
+  !   rc        : 0 = success, i+1 = step i failed (non-PD)
+  subroutine state_space_1_f(N, cross_cov, cov, innov, trans, rc)
+    integer,        intent(in)  :: N
+    real(c_double), intent(in)  :: cross_cov(N-1)
+    real(c_double), intent(in)  :: cov(N)
+    real(c_double), intent(out) :: innov(N)
+    real(c_double), intent(out) :: trans(N-1)
+    integer,        intent(out) :: rc
+
+    rc = int( c_state_space_1(int(N, c_int), cross_cov, cov, innov, trans) )
+  end subroutine state_space_1_f
 
 end module smerfs_interface
