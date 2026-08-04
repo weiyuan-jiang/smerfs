@@ -259,7 +259,9 @@ int state_space(const int N, const int M,
   A floor of 1e-30 * cov[i+1] is applied to b^2 to handle underflow for
   high-m modes where adjacent rings are nearly perfectly correlated.
 
-  Returns 0 on success, i+1 if cov[i] <= 0.
+  Returns 0 on success.  If a high-m covariance underflows to zero, the
+  corresponding scalar state is set to zero instead of failing; those modes
+  are negligible at the affected rings.
 */
 int state_space_1(const int N,
                   const double *restrict cross_cov,
@@ -267,15 +269,19 @@ int state_space_1(const int N,
                   double *restrict innov,
                   double *restrict trans)
 {
-  if (cov[0] <= 0.0) return 1;
-  innov[0] = sqrt(cov[0]);
+  innov[0] = (cov[0] > 0.0) ? sqrt(cov[0]) : 0.0;
 
   for (int i = 0; i < N - 1; ++i) {
-    if (cov[i] <= 0.0) return i + 2;
+    if (cov[i] <= 0.0) {
+      trans[i] = 0.0;
+      innov[i+1] = (cov[i+1] > 0.0) ? sqrt(cov[i+1]) : 0.0;
+      continue;
+    }
     const double t = cross_cov[i] / cov[i];
     trans[i] = t;
     double b2 = cov[i+1] - t * t * cov[i];
-    if (b2 < 1e-30 * cov[i+1]) b2 = 1e-30 * cov[i+1];
+    if (cov[i+1] <= 0.0) b2 = 0.0;
+    else if (b2 < 1e-30 * cov[i+1]) b2 = 1e-30 * cov[i+1];
     innov[i+1] = sqrt(b2);
   }
   return 0;
