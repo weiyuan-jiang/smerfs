@@ -24,5 +24,3 @@ pl.ylabel(r'$C(\cos \theta)$')
 pl.xlim(1,-1)
 pl.savefig('correl1.png',dpi=100)
 
-
-

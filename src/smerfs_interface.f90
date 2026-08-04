@@ -15,7 +15,7 @@ module smerfs_interface
   implicit none
 
   private
-  public :: update_cov_f, inverse_f, cholesky_f, state_space_f, &
+  public :: update_cov_f, update_cov_range_f, inverse_f, cholesky_f, state_space_f, &
             hyp_llp1_f, hyp_lmz_f, zigg_f, &
             cov_legendre_f, state_space_1_f
 
@@ -53,6 +53,25 @@ module smerfs_interface
       real(c_double),            intent(inout) :: cross_cov(*)
       integer(c_int) :: rc
     end function c_update_cov
+
+    function c_update_cov_range(m_lo, m_hi, N, M, &
+                                norm_re, norm_im, &
+                                llp1_re, llp1_im, &
+                                F, H, tau_power, eta_ratio2, &
+                                cov, cross_cov) &
+        bind(C, name='update_cov_range_w') result(rc)
+      import :: c_int, c_double, c_double_complex
+      integer(c_int), value, intent(in) :: m_lo, m_hi, N, M
+      real(c_double), value, intent(in) :: norm_re, norm_im
+      real(c_double), value, intent(in) :: llp1_re, llp1_im
+      complex(c_double_complex), intent(in)    :: F(*)
+      complex(c_double_complex), intent(in)    :: H(*)
+      real(c_double),            intent(in)    :: tau_power(*)
+      real(c_double),            intent(in)    :: eta_ratio2(*)
+      real(c_double),            intent(inout) :: cov(*)
+      real(c_double),            intent(inout) :: cross_cov(*)
+      integer(c_int) :: rc
+    end function c_update_cov_range
 
     ! ------------------------------------------------------------------
     ! linalg.c
@@ -228,6 +247,28 @@ contains
                            norm_re, norm_im, llp1_re, llp1_im, &
                            F, H, tau_power, eta_ratio2, cov, cross_cov) )
   end subroutine update_cov_f
+
+  subroutine update_cov_range_f(m_lo, m_hi, N, M, &
+                                norm_re, norm_im, &
+                                llp1_re, llp1_im, &
+                                F, H, tau_power, eta_ratio2, &
+                                cov, cross_cov, rc)
+    integer,                   intent(in)    :: m_lo, m_hi, N, M
+    real(c_double),            intent(in)    :: norm_re, norm_im
+    real(c_double),            intent(in)    :: llp1_re, llp1_im
+    complex(c_double_complex), intent(in)    :: F((m_hi-m_lo+1+M)*N)
+    complex(c_double_complex), intent(in)    :: H((m_hi-m_lo+1+M)*N)
+    real(c_double),            intent(in)    :: tau_power((2*M-1)*N)
+    real(c_double),            intent(in)    :: eta_ratio2(N-1)
+    real(c_double),            intent(inout) :: cov((m_hi-m_lo+1)*N*M*M)
+    real(c_double),            intent(inout) :: cross_cov((m_hi-m_lo+1)*(N-1)*M*M)
+    integer,                   intent(out)   :: rc
+
+    rc = int( c_update_cov_range(int(m_lo, c_int), int(m_hi, c_int), &
+                                 int(N, c_int), int(M, c_int), &
+                                 norm_re, norm_im, llp1_re, llp1_im, &
+                                 F, H, tau_power, eta_ratio2, cov, cross_cov) )
+  end subroutine update_cov_range_f
 
   ! ==================================================================
   ! inverse_f

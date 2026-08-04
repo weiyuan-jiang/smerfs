@@ -45,6 +45,11 @@ int update_cov(const int, const int, const int,
                const double complex *, const double complex *,
                const double *, const double *,
                double *, double *);
+int update_cov_range(const int, const int, const int, const int,
+                     const double, const double, const double, const double,
+                     const double complex *, const double complex *,
+                     const double *, const double *,
+                     double *, double *);
 int inverse   (const int, const int, const double *, double *);
 int cholesky  (const int, const int, const double *, double *);
 int state_space(const int, const int,
@@ -100,6 +105,22 @@ int update_cov_w(const int m_max, const int N, const int M,
                         norm_re, norm_im, llp1_re, llp1_im,
                         F, H, tau_power, eta_ratio2,
                         cov, cross_cov);
+    FENV_WRAP_END
+    return rc;
+}
+
+int update_cov_range_w(const int m_lo, const int m_hi, const int N, const int M,
+                       const double norm_re, const double norm_im,
+                       const double llp1_re, const double llp1_im,
+                       const double complex *F, const double complex *H,
+                       const double *tau_power, const double *eta_ratio2,
+                       double *cov, double *cross_cov)
+{
+    FENV_WRAP_BEGIN
+    int rc = update_cov_range(m_lo, m_hi, N, M,
+                              norm_re, norm_im, llp1_re, llp1_im,
+                              F, H, tau_power, eta_ratio2,
+                              cov, cross_cov);
     FENV_WRAP_END
     return rc;
 }

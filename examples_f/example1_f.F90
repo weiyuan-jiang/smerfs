@@ -7,7 +7,6 @@ program example1_f
   implicit none
 
   integer, parameter :: nz = 128, nphi = 256, lmax = 1000, nz_corr = 1000
-  real(c_double), parameter :: c0_expected = 1.0d0, c2_expected = 1.0d-4
   real(c_double), parameter :: pi = 3.141592653589793d0
   type(sphere_random_fields) :: sf
   type(pert_param_type) :: pert_param
@@ -17,15 +16,15 @@ program example1_f
   integer :: i, j, unit
 
   ! Equivalent Gaussian sigma for coeffs=(1,0,1e-4), computed from
-  ! smerfs.utils.analytic_cov at C(theta)/C(0)=exp(-0.5).
-  pert_param%xcorr = 73.6633
+  ! C(theta)/C(0)=exp(-0.5) using the same Legendre truncation as Fortran.
+  pert_param%xcorr = 6.046390243223
   pert_grid_f%N_lon = nphi
   pert_grid_f%N_lat = nz
   pert_grid_f%dlon = 360.0 / real(nphi)
   pert_grid_f%dlat = 180.0 / real(nz)
-  sf = sphere_random_fields(pert_param, pert_grid_f, c2=c2_expected)
+  sf = sphere_random_fields(pert_param, pert_grid_f)
   allocate(field(nphi, nz), field2(nphi, nz))
-  call sf%generate_2d_Random_field_seeded(123, field, field2, 73.6633, 73.6633, &
+  call sf%generate_2d_Random_field_seeded(123, field, field2, pert_param%xcorr, pert_param%xcorr, &
        pert_grid_f%dlon, pert_grid_f%dlat)
 
   open(newunit=unit, file='realisation.csv', status='replace', action='write')

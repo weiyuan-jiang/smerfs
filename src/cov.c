@@ -122,6 +122,76 @@ int update_cov(const int m_max, const int N, const int M,
   return 0;
 }
 
+int update_cov_range(const int m_lo, const int m_hi, const int N, const int M,
+                     const double norm_re, const double norm_im,
+                     const double llp1_re, const double llp1_im,
+                     const double complex *restrict F, const double complex *restrict H,
+                     const double *restrict tau_power, const double *restrict eta_ratio2,
+                     double *restrict cov, double *restrict cross_cov)
+{
+  const int n_cross = N-1;
+  double complex zeta[M], Rc[M], zetaA[M], zAH[M];
+  double complex norm = norm_re + I*norm_im;
+  const double complex llp1 = llp1_re + I*llp1_im;
+
+  double *eta = (double *)malloc(n_cross * sizeof(double));
+  if (!eta) return -1;
+
+  for (int i=0; i<n_cross; ++i)
+    eta[i] = 1.0;
+
+  for (int m=0; m<=m_hi; ++m) {
+    if (m >= m_lo) {
+      zeta[0] = 1.0;
+      zeta[1] = m - llp1/(m+1);
+
+      for (int i=2, v=m+2; i<M; ++i, ++v) {
+        const double complex mult = (v*(v-1) - llp1)/v;
+        zeta[i] = zeta[i-1]*mult;
+      }
+
+      for (int p=0; p<M; ++p)
+        zetaA[p] = (p&1) ? -zeta[p] : zeta[p];
+
+      for (int p=0, t_idx = (M-1)*N; p<M; ++p, t_idx-=N)
+        zAH[p] = zetaA[p] * H[(m+p-m_lo)*N] * tau_power[t_idx];
+
+      for (int p=0; p<M; ++p)
+        zeta[p] *= norm;
+
+      for (int p=0, F_idx=(m-m_lo)*N, t_idx=(M-1)*N; p<M; ++p, F_idx+=N, t_idx+=N) {
+        const double complex Lp = tau_power[t_idx] * (zeta[p] * F[F_idx]);
+        for (int q=0; q<M; ++q) {
+          const double complex Rq = zAH[q];
+          *cov++ += creal(Lp) * creal(Rq) - cimag(Lp)*cimag(Rq);
+        }
+      }
+
+      for (int n=0, tau0=(M-1)*N+1; n<n_cross; ++n, tau0++) {
+        for (int p=0, t_idx = tau0; p<M; ++p, t_idx-=N) {
+          Rc[p] = eta[n] * zAH[p];
+          zAH[p] = zetaA[p] * H[(m+p-m_lo)*N+n+1] * tau_power[t_idx];
+        }
+
+        for (int p=0, F_idx=(m-m_lo)*N+n+1, t_idx=tau0; p<M; ++p, F_idx+=N, t_idx+=N) {
+          const double complex Lp = tau_power[t_idx] * (zeta[p] * F[F_idx]);
+          for (int q=0; q<M; ++q) {
+            *cov++ += creal(Lp) * creal(zAH[q]) - cimag(Lp)*cimag(zAH[q]);
+            *cross_cov++ += creal(Lp)*creal(Rc[q]) - cimag(Lp)*cimag(Rc[q]);
+          }
+        }
+      }
+    }
+
+    for (int n=0; n<n_cross; ++n)
+      eta[n] *= eta_ratio2[n];
+    norm *= ((m+1)*m - llp1)/((m+1)*(m+1));
+  }
+
+  free(eta);
+  return 0;
+}
+
 /*
   cov_legendre
   ============
@@ -281,4 +351,3 @@ int cov_legendre(const int m_max, const int N, const int lmax,
   free(phi_prev); free(phi_curr); free(sin_t);
   return 0;
 }
-
